@@ -1,0 +1,4 @@
+practice
+*.AppImage
+MyApp.AppDir/
+appimagetool*
