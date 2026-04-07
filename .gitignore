@@ -3,3 +3,10 @@ build/
 *.out
 *.exe
 imgui.ini
+# binaries
+trackit
+practice
+main
+
+# appimages
+*.AppImage
