@@ -18,6 +18,42 @@
     long memory;
     };
 
+    struct stats
+    {
+        long long rx_bytes,tx_bytes;
+    };
+
+    stats getspeed()
+    {
+        stats total={0,0};
+        std::ifstream file("/proc/net/dev");
+        std::string line;
+        std::getline(file,line);
+        std::getline(file,line);
+
+        while(std::getline(file,line))
+        {
+            size_t colon = line.find(":");
+            if(colon == std::string::npos)continue;
+
+        std::string iface=line.substr(0, colon);
+        iface.erase(0, iface.find_first_not_of(" \t"));
+        iface.erase(iface.find_last_not_of(" \t") + 1);
+        if(iface == "lo") continue;
+
+            std::istringstream ss(line.substr(colon+1));
+            long long rx,tx,skip;
+            ss>>rx;
+            for(int i=0;i<7;i++)ss>>skip;
+            ss>>tx;
+
+            total.rx_bytes+=rx;
+            total.tx_bytes+=tx;
+
+        }
+        return total;
+    }
+
     std::vector<Process> getProcesses()
     {
         std::vector<Process> processes;
@@ -236,8 +272,11 @@ int main() {
             prev = curr;
             last_time = now;
         }
-        std::string dis_cpu=std::to_string(cpu_usage*100)+" %";
-        ImGui::ProgressBar(cpu_usage,ImVec2(0,0),dis_cpu.c_str());
+        //std::string dis_cpu=std::to_string(cpu_usage*100)+" %";
+        char buf[32];
+        snprintf(buf, sizeof(buf), "%.2f %%", cpu_usage * 100.0f);
+        //ImGui::ProgressBar(cpu_usage,ImVec2(0,0),dis_cpu.c_str());
+        ImGui::ProgressBar(cpu_usage,ImVec2(0,0),buf);
         ImGui::Text("Nice to meet youu");
         
         ImGui::Text("Memory");
@@ -246,9 +285,81 @@ int main() {
         float total=std::stof(mem[0]);
         float avl=std::stof(mem[1]);
         float mem_usage=(float)(total-avl)/total;
-        std::string dis_mem=mem[2]+"/"+mem[0];
-        ImGui::ProgressBar(mem_usage,ImVec2(0,0),dis_mem.c_str());
+        //std::string dis_mem=mem[2]+"/"+mem[0];
+        snprintf(buf, sizeof(buf), "%.2f / %.2f GB", total-avl, total);
+        ImGui::ProgressBar(mem_usage, ImVec2(0,0), buf);
+        //ImGui::ProgressBar(mem_usage,ImVec2(0,0),dis_mem.c_str());
+
+        ImGui::Separator();
+
+        //networj logic
+        static float download=0.0f;
+        static float upload=0.0;
+        static stats before={0,0};
+        static float last_net_time = -1.0f;
+        if (last_net_time < 0.0f)
+        {
+            before=getspeed();
+            last_net_time = ImGui::GetTime();
+        }
         
+        float now_net=ImGui::GetTime();
+        static float downhist[100]={0};
+        static float uphist[100]={0};
+        if(now_net-last_net_time>=0.5f)
+        {
+            float elapsed = now_net - last_net_time;
+            stats curr=getspeed();
+            for(int i=0;i<99;i++)
+            {
+                downhist[i]=downhist[i+1];
+                uphist[i]=uphist[i+1];
+            }
+            long long rx_diff=curr.rx_bytes-before.rx_bytes;
+            long long tx_diff=curr.tx_bytes-before.tx_bytes;
+
+            download=(rx_diff/1024.0f)/elapsed;
+            upload=(tx_diff/1024.0f)/elapsed;
+            downhist[99]=download;
+            uphist[99]=upload;
+            last_net_time=now_net;
+            before=curr;
+        }
+        float max_down = 0.0f, max_up = 0.0f;
+        for(int i=0;i<100;i++)
+        {
+            max_down = std::max(max_down, downhist[i]);
+            max_up   = std::max(max_up, uphist[i]);
+        }
+
+        if(max_down < 1.0f) max_down = 1.0f;
+        if(max_up   < 1.0f) max_up   = 1.0f;
+
+        ImVec2 avail2 = ImGui::GetContentRegionAvail();
+        float text_height =
+        ImGui::GetTextLineHeightWithSpacing() * 3 +   
+        ImGui::GetStyle().ItemSpacing.y * 2 +         
+        10.0f;                                       
+        float graph_height = (avail2.y - text_height) / 2.0f;
+
+        ImGui::Spacing();
+        ImGui::Text("Network Speed");
+        ImGui::Separator();
+
+        ImGui::TextColored(ImVec4(0,1,0,1),"Download: %.2f KB/S",download);
+        ImGui::PushStyleColor(ImGuiCol_FrameBg, IM_COL32(20,20,20,255));
+        ImGui::PushStyleColor(ImGuiCol_PlotLines, IM_COL32(0,255,0,255));
+        ImGui::PlotLines("##DL", downhist, 100, 0, NULL, 0.0f, max_down, ImVec2(avail2.x, graph_height));
+        ImGui::PopStyleColor();
+
+
+        ImGui::TextColored(ImVec4(1.0f,0.0f,0.00f,1.0f),"Upload: %.2f KB/S",upload);
+        ImGui::PushStyleColor(ImGuiCol_PlotLines, IM_COL32(255,150,0,255));
+        ImGui::PlotLines("##UP", uphist, 100, 0, NULL, 0.0f, max_up, ImVec2(avail2.x, graph_height));
+        ImGui::PopStyleColor();
+        ImGui::PopStyleColor();
+        
+
 
         ImGui::End();
 
@@ -352,10 +463,12 @@ int main() {
 
         ImVec2 avail = ImGui::GetContentRegionAvail();
 
+        ImGui::PushStyleColor(ImGuiCol_FrameBg, IM_COL32(20,20,20,255));
         ImGui::PushStyleColor(ImGuiCol_PlotLines, IM_COL32(0, 255, 150, 255));
         ImGui::PushStyleColor(ImGuiCol_PlotLinesHovered, IM_COL32(0, 255, 200, 255));
-        ImGui::PlotLines("CPU", history, 100, 0, NULL, 0.0f, 1.0f, avail);
+        ImGui::PlotLines("##CPU", history, 100, 0, NULL, 0.0f, 1.0f, avail);
         ImGui::PopStyleColor(2);
+        ImGui::PopStyleColor();
 
         ImGui::EndChild();
 
