@@ -10,3 +10,12 @@ main
 
 # appimages
 *.AppImage
+
+# build
+trackit
+
+# appimage
+*.AppImage
+
+# runtime
+imgui.ini
