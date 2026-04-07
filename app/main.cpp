@@ -207,7 +207,7 @@ std::vector<std::vector<long long>> cpu()
 int main() {
     glfwInit();
 
-    GLFWwindow* window = glfwCreateWindow(800, 600, "Practice", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(800, 600, "Trackit", NULL, NULL);
     glfwMakeContextCurrent(window);
 
     gladLoadGL();
@@ -225,24 +225,21 @@ int main() {
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        // YOU WILL WRITE HERE
         ImVec2 size = ImGui::GetIO().DisplaySize;
         ImGui::SetNextWindowPos(ImVec2(0, 0));
         ImGui::SetNextWindowSize(ImVec2(size.x * 0.45f, size.y * 0.5f));
-        ImGui::Begin("CPU", NULL,
+        ImGui::Begin("User Panel", NULL,
             ImGuiWindowFlags_NoMove |
             ImGuiWindowFlags_NoResize |
             ImGuiWindowFlags_NoCollapse
         );
-        ImGui::Text("My Panel");
-        ImGui::Separator();
-        ImGui::Text("Name: Ashish!");
-        ImGui::SameLine();
-        ImGui::Text("Age: 20");
+        const char* user = getenv("USER");
+        if (!user) user = "unknown";
+        ImGui::Text("Heyy!!%s, Nice to meet youu!",user);
         ImGui::Spacing();
+        ImGui::Separator();
 
         ImGui::Text("CPU");
-        float memo=0.9f;
         static std::vector<std::vector<long long>> prev;
         static float last_time = 0.0f;
 
@@ -277,7 +274,6 @@ int main() {
         snprintf(buf, sizeof(buf), "%.2f %%", cpu_usage * 100.0f);
         //ImGui::ProgressBar(cpu_usage,ImVec2(0,0),dis_cpu.c_str());
         ImGui::ProgressBar(cpu_usage,ImVec2(0,0),buf);
-        ImGui::Text("Nice to meet youu");
         
         ImGui::Text("Memory");
         std::vector<std::string> mem;
