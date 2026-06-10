@@ -48,12 +48,7 @@ I built this to understand how tools like `htop`, `btop`, and `neofetch` actuall
 ## Screenshots
 
 ### Main Dashboard
-<<<<<<< HEAD
-
 <!-- Put dashboard screenshot here -->
-
-=======
->>>>>>> d2f19d4 (Improved structure)
 <img width="1920" height="1080" alt="Track-it-demo" src="https://github.com/user-attachments/assets/d8bf71d9-b48c-415b-a3de-d0f63bf3c11a" />
 
 ### Process Explorer
@@ -62,21 +57,16 @@ I built this to understand how tools like `htop`, `btop`, and `neofetch` actuall
 ### Network Monitor
 <img width="847" height="455" alt="Network" src="https://github.com/user-attachments/assets/0738e146-7236-4faf-a379-d50139e9e08a" />
 
-<<<<<<< HEAD
+
 <img width="1047" height="501" alt="Process-tab" src="https://github.com/user-attachments/assets/49d1ee24-8a92-4be9-9c84-c600b78aba3a" />
 
-=======
----
->>>>>>> d2f19d4 (Improved structure)
 
 ## How It Works
 
 Trackit reads kernel-exposed data directly from the `/proc` filesystem:
 
-<<<<<<< HEAD
 <img width="847" height="455" alt="Network" src="https://github.com/user-attachments/assets/0738e146-7236-4faf-a379-d50139e9e08a" />
 
-=======
 | Source | Data |
 |---|---|
 | `/proc/stat` | CPU ticks (user, nice, system, idle) |
@@ -102,9 +92,7 @@ bash build.sh
 ```
 
 The build script compiles `main.cpp` alongside the vendored glad and ImGui sources in one shot — no CMake, no Make.
->>>>>>> d2f19d4 (Improved structure)
 
----
 
 ## Download
 
@@ -137,7 +125,6 @@ chmod +x Trackit-x86_64.AppImage
 
 ---
 
-<<<<<<< HEAD
 ## About
 
 I'm a 2nd year CS student and built this project to better understand how Linux exposes system information and how monitoring tools visualize that data.
@@ -149,6 +136,5 @@ Feedback and suggestions are always welcome.
 ---
 
 Built to explore Linux system programming, real-time monitoring, and desktop UI development in C++.
-=======
+
 Built this as a 2nd year CS student to dig into how Linux exposes system internals. Most of it came from reading kernel docs and reverse-engineering what `btop` was doing. Feedback is welcome.
->>>>>>> d2f19d4 (Improved structure)
