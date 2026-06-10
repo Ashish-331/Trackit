@@ -575,13 +575,6 @@ int main() {
         ImGui::End();
 
 
-
-        // TODO: remove this arr thing , its leftover and does nothing lol
-        float arr[100];
-        for(int i=0;i<100;i++)
-        {
-            arr[i] = std::sin(i * 0.1f);
-        }
         ImGui::SetNextWindowPos(ImVec2(0, size.y*0.5));
         ImGui::SetNextWindowSize(ImVec2(size.x , size.y*0.5f ));
         ImGui::Begin("CPU-Graph", NULL,
