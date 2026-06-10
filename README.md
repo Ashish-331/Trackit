@@ -1,3 +1,4 @@
+
 # Trackit
 
 Trackit is a lightweight Linux system monitor built using Dear ImGui and OpenGL.
@@ -10,7 +11,8 @@ It displays system information in real time by reading data directly from the Li
 
 <!-- Put GIF here -->
 
-![Trackit Demo](PASTE_GIF_URL_HERE)
+<img width="1907" height="1025" alt="Track__it" src="https://github.com/user-attachments/assets/753ee924-3bca-4532-b10b-78c65e44a0f4" />
+
 
 ---
 
@@ -55,19 +57,21 @@ It displays system information in real time by reading data directly from the Li
 
 <!-- Put dashboard screenshot here -->
 
-<img width="800" alt="Trackit Dashboard" src="PASTE_DASHBOARD_IMAGE_HERE" />
+<img width="1920" height="1080" alt="Track-it-demo" src="https://github.com/user-attachments/assets/d8bf71d9-b48c-415b-a3de-d0f63bf3c11a" />
 
 ### Process Explorer
 
 <!-- Put process screenshot here -->
 
-<img width="800" alt="Trackit Processes" src="PASTE_PROCESS_IMAGE_HERE" />
+<img width="1047" height="501" alt="Process-tab" src="https://github.com/user-attachments/assets/49d1ee24-8a92-4be9-9c84-c600b78aba3a" />
+
 
 ### Network Monitoring
 
 <!-- Put network screenshot here -->
 
-<img width="800" alt="Trackit Network" src="PASTE_NETWORK_IMAGE_HERE" />
+<img width="847" height="455" alt="Network" src="https://github.com/user-attachments/assets/0738e146-7236-4faf-a379-d50139e9e08a" />
+
 
 ---
 
