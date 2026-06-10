@@ -161,4 +161,4 @@ Feedback and suggestions are always welcome.
 
 ---
 
-Made as a learning project.
+Built to explore Linux system programming, real-time monitoring, and desktop UI development in C++.
