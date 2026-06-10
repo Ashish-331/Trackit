@@ -12,46 +12,102 @@
 #include "imgui.h"
 #include "backends/imgui_impl_glfw.h"
 #include "backends/imgui_impl_opengl3.h"
+
     struct Process {
     int pid;
     std::string name;
     long memory;
     };
 
+    // expanded stats - was only rx/tx bytes before
+    // now also tracking packets , errors , drops
     struct stats
     {
         long long rx_bytes,tx_bytes;
+        long long rx_packets,tx_packets;
+        long long rx_errors,tx_errors;
+        long long rx_drop,tx_drop;
     };
 
-    stats getspeed()
+    // per interface breakdown  - new struct
+    struct InterfaceStats
     {
-        stats total={0,0};
+        std::string name;
+        long long rx_bytes,tx_bytes;
+        long long rx_packets,tx_packets;
+        long long rx_errors,tx_errors;
+        long long rx_drop,tx_drop;
+    };
+
+    // reads all interfaces from /proc/net/dev
+    // skips loopback same as before
+    std::vector<InterfaceStats> getAllInterfaces()
+    {
+        std::vector<InterfaceStats> interfaces;
         std::ifstream file("/proc/net/dev");
         std::string line;
-        std::getline(file,line);
-        std::getline(file,line);
+        std::getline(file,line); //skip header 1
+        std::getline(file,line); //skip header 2
 
         while(std::getline(file,line))
         {
             size_t colon = line.find(":");
             if(colon == std::string::npos)continue;
 
-        std::string iface=line.substr(0, colon);
-        iface.erase(0, iface.find_first_not_of(" \t"));
-        iface.erase(iface.find_last_not_of(" \t") + 1);
-        if(iface == "lo") continue;
+            std::string iface=line.substr(0, colon);
+            iface.erase(0, iface.find_first_not_of(" \t"));
+            iface.erase(iface.find_last_not_of(" \t") + 1);
+            if(iface == "lo") continue;
 
             std::istringstream ss(line.substr(colon+1));
-            long long rx,tx,skip;
-            ss>>rx;
-            for(int i=0;i<7;i++)ss>>skip;
-            ss>>tx;
+            InterfaceStats s;
+            s.name = iface;
 
-            total.rx_bytes+=rx;
-            total.tx_bytes+=tx;
+            // /proc/net/dev column order:
+            // rx: bytes packets errs drop fifo frame compressed multicast
+            // tx: bytes packets errs drop fifo colls carrier compressed
+            // was only reading bytes before , now grabbing everything
+            long long skip;
+            ss >> s.rx_bytes >> s.rx_packets >> s.rx_errors >> s.rx_drop;
+            ss >> skip >> skip >> skip >> skip; // fifo frame compressed multicast
+            ss >> s.tx_bytes >> s.tx_packets >> s.tx_errors >> s.tx_drop;
 
+            interfaces.push_back(s);
+        }
+        return interfaces;
+    }
+
+    // getspeed now uses getAllInterfaces and sums everything up
+    // same return type as before so nothing breaks downstream
+    stats getspeed()
+    {
+        stats total={0,0,0,0,0,0,0,0};
+
+        for(auto& iface : getAllInterfaces())
+        {
+            total.rx_bytes   += iface.rx_bytes;
+            total.tx_bytes   += iface.tx_bytes;
+            total.rx_packets += iface.rx_packets;
+            total.tx_packets += iface.tx_packets;
+            total.rx_errors  += iface.rx_errors;
+            total.tx_errors  += iface.tx_errors;
+            total.rx_drop    += iface.rx_drop;
+            total.tx_drop    += iface.tx_drop;
         }
         return total;
+    }
+
+    // counts lines in /proc/net/tcp , each line = one tcp connection
+    // header line skipped , pretty rough estimate but good enough
+    int getTCPConnections()
+    {
+        std::ifstream file("/proc/net/tcp");
+        std::string line;
+        int count=0;
+        std::getline(file,line); //skip header
+        while(std::getline(file,line))
+            count++;
+        return count;
     }
 
     std::vector<Process> getProcesses()
@@ -291,17 +347,35 @@ int main() {
         //networj logic
         static float download=0.0f;
         static float upload=0.0;
-        static stats before={0,0};
+        static stats before={0,0,0,0,0,0,0,0};
         static float last_net_time = -1.0f;
         if (last_net_time < 0.0f)
         {
             before=getspeed();
             last_net_time = ImGui::GetTime();
         }
+
+        // session totals - track how much data moved since app opened
+        static stats session_start={0,0,0,0,0,0,0,0};
+        static bool session_init=false;
+        if(!session_init)
+        {
+            session_start=getspeed();
+            session_init=true;
+        }
+        stats session_now=getspeed();
+        float session_rx_mb=(session_now.rx_bytes-session_start.rx_bytes)/(1024.0f*1024.0f);
+        float session_tx_mb=(session_now.tx_bytes-session_start.tx_bytes)/(1024.0f*1024.0f);
         
         float now_net=ImGui::GetTime();
         static float downhist[100]={0};
         static float uphist[100]={0};
+
+        // per interface data - updated same interval as speed
+        static std::vector<InterfaceStats> iface_prev;
+        static std::vector<InterfaceStats> iface_curr;
+        static std::vector<float> iface_rx_speed,iface_tx_speed;
+
         if(now_net-last_net_time>=0.5f)
         {
             float elapsed = now_net - last_net_time;
@@ -318,6 +392,21 @@ int main() {
             upload=(tx_diff/1024.0f)/elapsed;
             downhist[99]=download;
             uphist[99]=upload;
+
+            // grab per interface speeds too
+            iface_curr=getAllInterfaces();
+            if(!iface_prev.empty() && iface_prev.size()==iface_curr.size())
+            {
+                iface_rx_speed.resize(iface_curr.size());
+                iface_tx_speed.resize(iface_curr.size());
+                for(size_t i=0;i<iface_curr.size();i++)
+                {
+                    iface_rx_speed[i]=((iface_curr[i].rx_bytes-iface_prev[i].rx_bytes)/1024.0f)/elapsed;
+                    iface_tx_speed[i]=((iface_curr[i].tx_bytes-iface_prev[i].tx_bytes)/1024.0f)/elapsed;
+                }
+            }
+            iface_prev=iface_curr;
+
             last_net_time=now_net;
             before=curr;
         }
@@ -340,6 +429,70 @@ int main() {
 
         ImGui::Spacing();
         ImGui::Text("Network Speed");
+        ImGui::Separator();
+
+        // session totals since app started
+        ImGui::TextColored(ImVec4(0.5f,0.8f,1.0f,1.0f),
+            "Session  RX: %.2f MB   TX: %.2f MB",session_rx_mb,session_tx_mb);
+
+        // tcp connection count - updates every 2s , no need to hammer /proc/net/tcp
+        static int tcp_conns=0;
+        static float last_tcp_time=0.0f;
+        if(now-last_tcp_time>2.0f)
+        {
+            tcp_conns=getTCPConnections();
+            last_tcp_time=now;
+        }
+        ImGui::TextColored(ImVec4(1.0f,0.8f,0.2f,1.0f),"Active TCP Connections: %d",tcp_conns);
+
+        ImGui::Separator();
+
+        // per interface table  - errors/drops go red if nonzero
+        if(!iface_curr.empty())
+        {
+            ImGui::BeginTable("NetIfaces",5,
+                ImGuiTableFlags_BordersInner | ImGuiTableFlags_BordersOuter);
+
+            ImGui::TableSetupColumn("Interface");
+            ImGui::TableSetupColumn("RX KB/s");
+            ImGui::TableSetupColumn("TX KB/s");
+            ImGui::TableSetupColumn("Errors");
+            ImGui::TableSetupColumn("Drops");
+            ImGui::TableHeadersRow();
+
+            for(size_t i=0;i<iface_curr.size();i++)
+            {
+                auto& iface=iface_curr[i];
+                ImGui::TableNextRow();
+
+                ImGui::TableSetColumnIndex(0);
+                ImGui::Text("%s",iface.name.c_str());
+
+                ImGui::TableSetColumnIndex(1);
+                if(!iface_rx_speed.empty())
+                    ImGui::Text("%.1f",iface_rx_speed[i]);
+
+                ImGui::TableSetColumnIndex(2);
+                if(!iface_tx_speed.empty())
+                    ImGui::Text("%.1f",iface_tx_speed[i]);
+
+                ImGui::TableSetColumnIndex(3);
+                long long errs=iface.rx_errors+iface.tx_errors;
+                if(errs>0)
+                    ImGui::TextColored(ImVec4(1,0,0,1),"%lld",errs);
+                else
+                    ImGui::TextColored(ImVec4(0,1,0,1),"0");
+
+                ImGui::TableSetColumnIndex(4);
+                long long drops=iface.rx_drop+iface.tx_drop;
+                if(drops>0)
+                    ImGui::TextColored(ImVec4(1,0.5f,0,1),"%lld",drops);
+                else
+                    ImGui::TextColored(ImVec4(0,1,0,1),"0");
+            }
+            ImGui::EndTable();
+        }
+
         ImGui::Separator();
 
         ImGui::TextColored(ImVec4(0,1,0,1),"Download: %.2f KB/S",download);
@@ -423,6 +576,7 @@ int main() {
 
 
 
+        // TODO: remove this arr thing , its leftover and does nothing lol
         float arr[100];
         for(int i=0;i<100;i++)
         {
