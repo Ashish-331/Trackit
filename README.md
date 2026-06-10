@@ -1,24 +1,81 @@
 # Trackit
 
-Trackit is a lightweight system monitor built using ImGui and OpenGL.
-It displays basic system stats like CPU, memory, and network usage in a simple real-time UI.
+Trackit is a lightweight Linux system monitor built using Dear ImGui and OpenGL.
+
+It displays system information in real time by reading data directly from the Linux `/proc` filesystem. The goal of the project was to understand how tools like `htop`, `btop`, and `neofetch` work under the hood and try building something similar from scratch.
+
+---
+
+## Demo
+
+<!-- Put GIF here -->
+
+![Trackit Demo](PASTE_GIF_URL_HERE)
+
+---
 
 ## Features
 
-* CPU usage visualization
-* Memory usage tracking
-* Network statistics
-* Clean real-time UI using ImGui
+### CPU Monitoring
 
-## Preview
+* Real-time CPU usage tracking
+* Live CPU history graph
+* Percentage-based visualization
 
-<img width="800" height="632" alt="Trackit UI" src="https://github.com/user-attachments/assets/d52c2e4a-1cad-4437-9069-e9a0b1209d7e" />
+### Memory Monitoring
+
+* System memory usage tracking
+* Used vs available memory display
+* Live memory utilization bar
+
+### Process Explorer
+
+* Running process list
+* Process IDs (PID)
+* Process names
+* Per-process RAM usage
+* Memory-based sorting
+
+### Network Monitoring
+
+* Real-time upload speed
+* Real-time download speed
+* Historical traffic graphs
+* Per-interface statistics
+* Packet counters
+* Error monitoring
+* Packet drop monitoring
+* Active TCP connection count
+
+---
+
+## Screenshots
+
+### Main Dashboard
+
+<!-- Put dashboard screenshot here -->
+
+<img width="800" alt="Trackit Dashboard" src="PASTE_DASHBOARD_IMAGE_HERE" />
+
+### Process Explorer
+
+<!-- Put process screenshot here -->
+
+<img width="800" alt="Trackit Processes" src="PASTE_PROCESS_IMAGE_HERE" />
+
+### Network Monitoring
+
+<!-- Put network screenshot here -->
+
+<img width="800" alt="Trackit Network" src="PASTE_NETWORK_IMAGE_HERE" />
 
 ---
 
 ## Download
 
-Go to the **Releases** section and download:
+Download the latest release from the Releases section.
+
+Included binary:
 
 `Trackit-x86_64.AppImage`
 
@@ -34,17 +91,17 @@ chmod +x Trackit-x86_64.AppImage
 Or:
 
 * Right click → Properties
-* Enable “Allow executing file as program”
+* Enable "Allow executing file as program"
 * Double click
 
 ---
 
-## Build from Source
+## Build From Source
 
 ```bash
 git clone https://github.com/Ashish-331/Trackit.git
 cd Trackit
-./build.sh
+bash build.sh
 ```
 
 Run:
@@ -55,27 +112,48 @@ Run:
 
 ---
 
-## Notes
+## How It Works
 
-* Linux only (tested on Ubuntu / Mint)
-* Requires OpenGL support
+Trackit gathers information directly from Linux system files:
+
+* `/proc/stat` → CPU statistics
+* `/proc/meminfo` → Memory statistics
+* `/proc/net/dev` → Network traffic
+* `/proc/net/tcp` → TCP connections
+* `/proc/[pid]/comm` → Process names
+* `/proc/[pid]/status` → Process memory usage
+
+The collected data is rendered through a custom Dear ImGui dashboard and updated in real time.
+
+---
+
+## Tech Stack
+
+* C++
+* Dear ImGui
+* OpenGL
+* GLFW
+* Linux `/proc` filesystem
 
 ---
 
 ## Future Ideas
 
-* Disk usage stats
-* Improved UI layout
+* Per-process CPU usage
+* Disk usage monitoring
+* Multi-core CPU visualization
+* Process search and filtering
+* Custom themes
 
 ---
 
 ## About
 
-I’m a 2nd year CS student and built this project to understand how system stats are fetched and visualized.
+I'm a 2nd year CS student and built this project to better understand how Linux exposes system information and how monitoring tools visualize that data.
 
-Tools like `btop`, `htop`, and `neofetch` really inspired me, and I wanted to try building something similar from scratch.
+Tools like `btop`, `htop`, and `neofetch` were a big inspiration, and Trackit started as an attempt to explore those concepts by building my own version from scratch.
 
-If you have any feedback or suggestions, I’d really appreciate it.
+Feedback and suggestions are always welcome.
 
 ---
 
